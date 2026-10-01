@@ -1,0 +1,163 @@
+name: omena-immo-v2-dev
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+services:
+  immo-db:
+    image: postgres:17-alpine
+    container_name: omena-immo-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${IMMO_DB_NAME:-immo}"
+      POSTGRES_USER: "${IMMO_DB_USER:-immo}"
+      POSTGRES_PASSWORD: "${IMMO_DB_PASSWORD:-immo-local-change-me}"
+      TZ: "${TZ:-Europe/Paris}"
+    volumes:
+      - immo_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *default-logging
+
+  immo-api:
+    build:
+      context: ./immo-api
+    container_name: omena-immo-api
+    restart: unless-stopped
+    environment:
+      TZ: "${TZ:-Europe/Paris}"
+      DB_HOST: immo-db
+      DB_PORT: "5432"
+      DB_NAME: "${IMMO_DB_NAME:-immo}"
+      DB_USER: "${IMMO_DB_USER:-immo}"
+      DB_PASSWORD: "${IMMO_DB_PASSWORD:-immo-local-change-me}"
+      APP_CORS_ALLOWED_ORIGINS: "http://localhost:${WEB_PORT:-4200}"
+      N8N_INTERNAL_URL: "http://n8n:5678"
+      N8N_DB_HOST: n8n-db
+      N8N_DB_PORT: "5432"
+      N8N_DB_NAME: "${N8N_DB_NAME:-n8n}"
+      N8N_DB_USER: "${N8N_DB_USER:-n8n}"
+      N8N_DB_PASSWORD: "${N8N_DB_PASSWORD:-n8n-local-change-me}"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434}"
+    ports:
+      - "${API_PORT:-8080}:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      immo-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    logging: *default-logging
+
+  immo-web:
+    build:
+      context: ./immo-web
+    container_name: omena-immo-web
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-4200}:80"
+    depends_on:
+      immo-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *default-logging
+
+  n8n-db:
+    image: postgres:17-alpine
+    container_name: omena-n8n-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${N8N_DB_NAME:-n8n}"
+      POSTGRES_USER: "${N8N_DB_USER:-n8n}"
+      POSTGRES_PASSWORD: "${N8N_DB_PASSWORD:-n8n-local-change-me}"
+      TZ: "${TZ:-Europe/Paris}"
+    volumes:
+      - n8n_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    logging: *default-logging
+
+  n8n:
+    image: "docker.n8n.io/n8nio/n8n:${N8N_VERSION:-stable}"
+    container_name: omena-n8n
+    restart: unless-stopped
+    environment:
+      TZ: "${TZ:-Europe/Paris}"
+      GENERIC_TIMEZONE: "${TZ:-Europe/Paris}"
+      N8N_HOST: localhost
+      N8N_LISTEN_ADDRESS: "0.0.0.0"
+      N8N_PORT: "5678"
+      N8N_PROTOCOL: http
+      N8N_EDITOR_BASE_URL: "http://localhost:${N8N_PUBLIC_PORT:-5679}"
+      N8N_WEBHOOK_URL: "http://localhost:${N8N_PUBLIC_PORT:-5679}/"
+      N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY:-local-development-key-change-before-production}"
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: n8n-db
+      DB_POSTGRESDB_PORT: "5432"
+      DB_POSTGRESDB_DATABASE: "${N8N_DB_NAME:-n8n}"
+      DB_POSTGRESDB_USER: "${N8N_DB_USER:-n8n}"
+      DB_POSTGRESDB_PASSWORD: "${N8N_DB_PASSWORD:-n8n-local-change-me}"
+      IMMO_API_BASE_URL: "http://immo-api:8080"
+      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434}"
+    ports:
+      - "${N8N_PUBLIC_PORT:-5679}:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n/workflows:/workflows
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      n8n-db:
+        condition: service_healthy
+      immo-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:5678/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    logging: *default-logging
+
+  ollama:
+    image: "ollama/ollama:${OLLAMA_VERSION:-latest}"
+    restart: unless-stopped
+    environment:
+      OLLAMA_HOST: "0.0.0.0:11434"
+    ports:
+      - "${OLLAMA_PUBLIC_PORT:-11434}:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+    logging: *default-logging
+
+volumes:
+  immo_db_data:
+  n8n_db_data:
+  n8n_data:
+  ollama_data:

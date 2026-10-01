@@ -3,28 +3,100 @@
     <p class="eyebrow">OMENA · IMMO V2</p>
     <h1>Sourcing immobilier</h1>
     <p class="subtitle">
-      Angular pour l'interface, Spring Boot pour le metier et n8n pour l'orchestration.
+      Angular pour l'interface, Spring Boot pour le métier et n8n pour l'orchestration.
     </p>
   </header>
 
-  <section class="status-card">
-    <div>
-      <span class="label">API Java</span>
-      <strong>{{ apiStatus() }}</strong>
+  <section class="system-panel">
+    <div class="system-heading">
+      <div>
+        <p class="eyebrow">SYSTÈME</p>
+        <h2>État des services</h2>
+        <p class="system-meta">
+          {{ upCount() }}/{{ totalCount() }} opérationnels · dernier contrôle {{ checkedAtLabel() }} · auto toutes les 10 s
+        </p>
+      </div>
+
+      <div class="system-actions">
+        <span
+          class="overall-badge"
+          [class.up]="systemStatus() === 'UP'"
+          [class.degraded]="systemStatus() === 'DEGRADED'"
+          [class.down]="systemStatus() === 'DOWN'"
+        >
+          {{ systemStatus() }}
+        </span>
+
+        <button type="button" (click)="refresh()" [disabled]="healthLoading()">
+          {{ healthLoading() ? 'Vérification...' : 'Actualiser' }}
+        </button>
+      </div>
     </div>
-    <button type="button" (click)="refresh()">Actualiser</button>
+
+    <div class="service-grid">
+      <article class="service-card up">
+        <div class="service-top">
+          <div>
+            <span class="service-type">Interface</span>
+            <h3>Angular</h3>
+          </div>
+          <span class="service-status up">UP</span>
+        </div>
+        <p>Interface chargée et accessible dans le navigateur.</p>
+        <small>Frontend</small>
+      </article>
+
+      @for (service of services(); track service.id) {
+        <article
+          class="service-card"
+          [class.up]="service.status === 'UP'"
+          [class.down]="service.status === 'DOWN'"
+          [class.unknown]="service.status === 'UNKNOWN' || service.status === 'NOT_CONFIGURED'"
+        >
+          <div class="service-top">
+            <div>
+              <span class="service-type">{{ service.type }}</span>
+              <h3>{{ service.name }}</h3>
+            </div>
+
+            <span
+              class="service-status"
+              [class.up]="service.status === 'UP'"
+              [class.down]="service.status === 'DOWN'"
+              [class.unknown]="service.status === 'UNKNOWN' || service.status === 'NOT_CONFIGURED'"
+            >
+              {{ statusLabel(service.status) }}
+            </span>
+          </div>
+
+          <p>{{ service.detail }}</p>
+
+          <div class="service-footer">
+            @if (service.latencyMs >= 0) {
+              <small>{{ service.latencyMs }} ms</small>
+            } @else {
+              <small>Pas de mesure</small>
+            }
+
+            @if (service.optional) {
+              <span class="optional-badge">Optionnel</span>
+            }
+          </div>
+        </article>
+      }
+    </div>
   </section>
 
   <section class="architecture">
     <article>
       <span>01</span>
       <h2>Angular</h2>
-      <p>Zones, criteres, annonces et suivi.</p>
+      <p>Zones, critères, annonces et suivi.</p>
     </article>
     <article>
       <span>02</span>
       <h2>Spring Boot</h2>
-      <p>Regles metier, calculs et PostgreSQL.</p>
+      <p>Règles métier, calculs et PostgreSQL.</p>
     </article>
     <article>
       <span>03</span>
@@ -36,8 +108,8 @@
   <section class="criteria">
     <div class="section-title">
       <div>
-        <p class="eyebrow">CRITERES</p>
-        <h2>Recherches configurees</h2>
+        <p class="eyebrow">CRITÈRES</p>
+        <h2>Recherches configurées</h2>
       </div>
       <span class="count">{{ criteria().length }}</span>
     </div>
@@ -54,7 +126,7 @@
         </article>
       } @empty {
         <div class="empty">
-          Aucun critere pour l'instant. Le socle est pret a recevoir l'ecran de configuration.
+          Aucun critère pour l'instant. Le socle est prêt à recevoir l'écran de configuration.
         </div>
       }
     </div>

@@ -14,26 +14,59 @@ Socle V2 de l'application interne de sourcing immobilier Omena.
 
 ## Demarrage
 
-Aucun .env n'est obligatoire pour le premier lancement.
+Deux stacks simples sont disponibles.
 
-Depuis la racine :
+### Developpement
 
-    docker compose up -d
+La stack de developpement lance Angular, Spring Boot, les deux PostgreSQL, n8n et Ollama :
 
-Docker construit le frontend et le backend au premier lancement.
+    docker compose -f compose.dev.yml up -d --build
 
-Pour suivre :
+Ollama demarre sans aucun modele. Aucun modele n'est telecharge automatiquement.
 
-    docker compose ps
-    docker compose logs -f immo-api
-    docker compose logs -f immo-web
-    docker compose logs -f n8n
+Le volume Ollama existe pour conserver les modeles si vous en telechargez un manuellement plus tard, mais il reste pratiquement vide au premier lancement.
+
+Pour verifier :
+
+    docker compose -f compose.dev.yml ps
 
 Pour arreter :
 
-    docker compose down
+    docker compose -f compose.dev.yml down
 
-Les volumes sont conserves.
+### Production
+
+En production, le modele Ollama doit etre choisi explicitement.
+
+Exemple :
+
+    OLLAMA_MODEL=qwen3:8b docker compose -f compose.prod.yml up -d --build
+
+Au premier lancement, le service ollama-model-init verifie si le modele existe dans le volume persistant. S'il manque, il le telecharge. Aux lancements suivants, le modele deja present est reutilise.
+
+Autre exemple :
+
+    OLLAMA_MODEL=gemma3:12b docker compose -f compose.prod.yml up -d --build
+
+Aucun modele par defaut n'est impose volontairement, afin d'eviter un telechargement volumineux accidentel.
+
+Pour arreter :
+
+    docker compose -f compose.prod.yml down
+
+Les volumes PostgreSQL, n8n et Ollama sont conserves.
+
+### Fichier .env
+
+Le fichier .env reste optionnel en developpement.
+
+Pour eviter de saisir le modele a chaque lancement en production, vous pouvez copier .env.example vers .env puis definir :
+
+    OLLAMA_MODEL=qwen3:8b
+
+Ensuite :
+
+    docker compose -f compose.prod.yml up -d --build
 
 ## URLs locales
 

@@ -1,0 +1,62 @@
+<main class="shell">
+  <header class="hero">
+    <p class="eyebrow">OMENA · IMMO V2</p>
+    <h1>Sourcing immobilier</h1>
+    <p class="subtitle">
+      Angular pour l'interface, Spring Boot pour le metier et n8n pour l'orchestration.
+    </p>
+  </header>
+
+  <section class="status-card">
+    <div>
+      <span class="label">API Java</span>
+      <strong>{{ apiStatus() }}</strong>
+    </div>
+    <button type="button" (click)="refresh()">Actualiser</button>
+  </section>
+
+  <section class="architecture">
+    <article>
+      <span>01</span>
+      <h2>Angular</h2>
+      <p>Zones, criteres, annonces et suivi.</p>
+    </article>
+    <article>
+      <span>02</span>
+      <h2>Spring Boot</h2>
+      <p>Regles metier, calculs et PostgreSQL.</p>
+    </article>
+    <article>
+      <span>03</span>
+      <h2>n8n</h2>
+      <p>Collecte, IA et automatisations.</p>
+    </article>
+  </section>
+
+  <section class="criteria">
+    <div class="section-title">
+      <div>
+        <p class="eyebrow">CRITERES</p>
+        <h2>Recherches configurees</h2>
+      </div>
+      <span class="count">{{ criteria().length }}</span>
+    </div>
+
+    <div class="criteria-grid">
+      @for (item of criteria(); track item.id) {
+        <article class="criteria-card">
+          <div class="criteria-heading">
+            <strong>{{ item.name }}</strong>
+            <span [class.inactive]="!item.active">{{ item.active ? 'Actif' : 'Inactif' }}</span>
+          </div>
+          <p>{{ item.city }} {{ item.postalCode ?? '' }}</p>
+          <small>Rayon : {{ item.radiusKm }} km</small>
+        </article>
+      } @empty {
+        <div class="empty">
+          Aucun critere pour l'instant. Le socle est pret a recevoir l'ecran de configuration.
+        </div>
+      }
+    </div>
+  </section>
+</main>

@@ -21,7 +21,7 @@ n8n :
 - planification ;
 - orchestration ;
 - appels de connecteurs ;
-- Ollama / IA ;
+- services IA externes si necessaire ;
 - mails, Drive et notifications.
 
 Scrapers :
@@ -37,7 +37,7 @@ Scrapers :
     Spring Boot ---- PostgreSQL
        ^
        |
-      n8n ---- Ollama / services externes
+      n8n ---- services externes
        |
        v
     Connecteurs de collecte

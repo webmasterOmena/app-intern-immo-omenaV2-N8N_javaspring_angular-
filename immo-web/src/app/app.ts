@@ -123,15 +123,6 @@ export class App implements OnInit, OnDestroy {
             optional: false,
             latencyMs: -1,
             detail: 'État inconnu tant que l’API est indisponible'
-          },
-          {
-            id: 'ollama',
-            name: 'Ollama',
-            type: 'IA locale',
-            status: 'UNKNOWN',
-            optional: true,
-            latencyMs: -1,
-            detail: 'État inconnu tant que l’API est indisponible'
           }
         ]);
         this.healthLoading.set(false);

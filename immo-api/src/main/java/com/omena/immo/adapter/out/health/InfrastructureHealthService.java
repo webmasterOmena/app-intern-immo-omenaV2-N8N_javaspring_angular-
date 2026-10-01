@@ -4,10 +4,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.sql.DriverManager;
 import java.time.Duration;
 import java.time.Instant;
@@ -17,10 +16,9 @@ import java.util.List;
 @Service
 public class InfrastructureHealthService {
 
-    private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(2);
+    private static final Duration HTTP_TIMEOUT = Duration.ofSeconds(5);
 
     private final JdbcTemplate jdbcTemplate;
-    private final HttpClient httpClient;
     private final String n8nUrl;
     private final String n8nDbHost;
     private final int n8nDbPort;
@@ -40,9 +38,6 @@ public class InfrastructureHealthService {
             @Value("${app.integrations.ollama-url:http://host.docker.internal:11434}") String ollamaUrl
     ) {
         this.jdbcTemplate = jdbcTemplate;
-        this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(HTTP_TIMEOUT)
-                .build();
         this.n8nUrl = stripTrailingSlash(n8nUrl);
         this.n8nDbHost = n8nDbHost;
         this.n8nDbPort = n8nDbPort;
@@ -189,25 +184,36 @@ public class InfrastructureHealthService {
         }
 
         try {
-            HttpRequest request = HttpRequest.newBuilder(URI.create(url))
-                    .timeout(HTTP_TIMEOUT)
-                    .GET()
-                    .build();
+            HttpURLConnection connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
+            int timeoutMillis = Math.toIntExact(HTTP_TIMEOUT.toMillis());
 
-            HttpResponse<Void> response = httpClient.send(
-                    request,
-                    HttpResponse.BodyHandlers.discarding()
-            );
+            connection.setConnectTimeout(timeoutMillis);
+            connection.setReadTimeout(timeoutMillis);
+            connection.setRequestMethod("GET");
+            connection.setRequestProperty("Accept", "application/json");
+            connection.setRequestProperty("User-Agent", "omena-immo-health/1.0");
+            connection.setUseCaches(false);
 
+            int statusCode = connection.getResponseCode();
             long latency = elapsedMillis(start);
 
-            if (response.statusCode() >= 200 && response.statusCode() < 400) {
+            try (InputStream body = statusCode >= 400
+                    ? connection.getErrorStream()
+                    : connection.getInputStream()) {
+                if (body != null) {
+                    body.readAllBytes();
+                }
+            } finally {
+                connection.disconnect();
+            }
+
+            if (statusCode >= 200 && statusCode < 400) {
                 return up(
                         id,
                         name,
                         type,
                         latency,
-                        "HTTP " + response.statusCode()
+                        "HTTP " + statusCode
                 );
             }
 
@@ -216,7 +222,7 @@ public class InfrastructureHealthService {
                     name,
                     type,
                     latency,
-                    "HTTP " + response.statusCode(),
+                    "HTTP " + statusCode,
                     optional
             );
         } catch (Exception exception) {

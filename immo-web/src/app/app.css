@@ -1,0 +1,158 @@
+.shell {
+  width: min(1120px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 48px 0 80px;
+}
+
+.hero {
+  max-width: 720px;
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  color: #557064;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(36px, 7vw, 68px);
+  line-height: .98;
+  letter-spacing: -.04em;
+}
+
+.subtitle {
+  margin-top: 20px;
+  color: #5a665f;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.status-card,
+.architecture article,
+.criteria-card,
+.empty {
+  background: #fff;
+  border: 1px solid #dce3df;
+  border-radius: 18px;
+}
+
+.status-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 20px;
+  margin-bottom: 20px;
+}
+
+.status-card div {
+  display: grid;
+  gap: 4px;
+}
+
+.label {
+  color: #6d7772;
+  font-size: 12px;
+}
+
+button {
+  border: 0;
+  border-radius: 12px;
+  padding: 10px 16px;
+  background: #183b2b;
+  color: #fff;
+  cursor: pointer;
+}
+
+.architecture {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.architecture article {
+  padding: 24px;
+}
+
+.architecture article > span {
+  color: #7f9188;
+  font-size: 12px;
+}
+
+.architecture h2 {
+  margin: 24px 0 8px;
+}
+
+.architecture p,
+.criteria-card p {
+  color: #647069;
+}
+
+.criteria {
+  margin-top: 52px;
+}
+
+.section-title,
+.criteria-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title h2 {
+  margin: 0;
+}
+
+.count {
+  display: grid;
+  place-items: center;
+  min-width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: #183b2b;
+  color: #fff;
+}
+
+.criteria-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.criteria-card,
+.empty {
+  padding: 20px;
+}
+
+.criteria-heading span {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #e7f2eb;
+  color: #24553c;
+  font-size: 12px;
+}
+
+.criteria-heading span.inactive {
+  background: #eceeed;
+  color: #6a726e;
+}
+
+.empty {
+  grid-column: 1 / -1;
+  color: #69736e;
+}
+
+@media (max-width: 720px) {
+  .architecture,
+  .criteria-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .shell {
+    padding-top: 28px;
+  }
+}

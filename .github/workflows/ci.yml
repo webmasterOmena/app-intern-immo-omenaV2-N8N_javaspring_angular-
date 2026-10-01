@@ -69,4 +69,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker compose config --quiet
+      - name: Validate default compose
+        run: docker compose config --quiet
+      - name: Validate development compose
+        run: docker compose -f compose.dev.yml config --quiet
+      - name: Validate production compose
+        env:
+          OLLAMA_MODEL: ci-validation-model
+        run: docker compose -f compose.prod.yml config --quiet

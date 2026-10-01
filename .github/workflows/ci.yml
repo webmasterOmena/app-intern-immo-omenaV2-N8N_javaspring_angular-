@@ -74,6 +74,4 @@ jobs:
       - name: Validate development compose
         run: docker compose -f compose.dev.yml config --quiet
       - name: Validate production compose
-        env:
-          OLLAMA_MODEL: ci-validation-model
         run: docker compose -f compose.prod.yml config --quiet

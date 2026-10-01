@@ -8,6 +8,5 @@ URL locale par defaut :
 
 Depuis n8n :
 - API Java : http://immo-api:8080
-- Ollama sur la machine hote : http://host.docker.internal:11434
 
 Les workflows versionnes iront dans n8n/workflows/.

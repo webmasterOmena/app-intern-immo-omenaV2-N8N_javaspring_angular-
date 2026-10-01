@@ -9,26 +9,25 @@ Socle V2 de l'application interne de sourcing immobilier Omena.
 - Architecture hexagonale cote Java.
 - PostgreSQL pour les donnees metier.
 - n8n pour les automatisations et l'orchestration.
-- Ollama local prevu pour les analyses IA.
 - Connecteurs de scraping separes, ajoutes progressivement.
 
 ## Demarrage
 
-Deux stacks simples sont disponibles.
+Deux stacks sont conservees : developpement et production.
 
 ### Developpement
 
-La stack de developpement lance Angular, Spring Boot, les deux PostgreSQL, n8n et Ollama :
+Depuis la racine :
 
     docker compose -f compose.dev.yml up -d --build
-
-Ollama demarre sans aucun modele. Aucun modele n'est telecharge automatiquement.
-
-Le volume Ollama existe pour conserver les modeles si vous en telechargez un manuellement plus tard, mais il reste pratiquement vide au premier lancement.
 
 Pour verifier :
 
     docker compose -f compose.dev.yml ps
+
+Pour suivre les logs :
+
+    docker compose -f compose.dev.yml logs -f
 
 Pour arreter :
 
@@ -36,57 +35,42 @@ Pour arreter :
 
 ### Production
 
-En production, le modele Ollama doit etre choisi explicitement.
+Depuis la racine :
 
-Exemple :
+    docker compose -f compose.prod.yml up -d --build
 
-    OLLAMA_MODEL=qwen3:8b docker compose -f compose.prod.yml up -d --build
+Pour verifier :
 
-Au premier lancement, le service ollama-model-init verifie si le modele existe dans le volume persistant. S'il manque, il le telecharge. Aux lancements suivants, le modele deja present est reutilise.
-
-Autre exemple :
-
-    OLLAMA_MODEL=gemma3:12b docker compose -f compose.prod.yml up -d --build
-
-Aucun modele par defaut n'est impose volontairement, afin d'eviter un telechargement volumineux accidentel.
+    docker compose -f compose.prod.yml ps
 
 Pour arreter :
 
     docker compose -f compose.prod.yml down
 
-Les volumes PostgreSQL, n8n et Ollama sont conserves.
+Les volumes PostgreSQL et n8n sont conserves.
 
 ### Fichier .env
 
-Le fichier .env reste optionnel en developpement.
-
-Pour eviter de saisir le modele a chaque lancement en production, vous pouvez copier .env.example vers .env puis definir :
-
-    OLLAMA_MODEL=qwen3:8b
-
-Ensuite :
-
-    docker compose -f compose.prod.yml up -d --build
-
-## URLs locales
-
-- Angular : http://localhost:4200
-- API : http://localhost:8080/api/health
-- n8n integre : http://localhost:5679
-
-n8n utilise volontairement 5679 pour pouvoir cohabiter avec une installation n8n independante deja exposee sur 5678.
-
-## Configuration optionnelle
+Le fichier .env est optionnel en local.
 
 Pour modifier les valeurs par defaut :
 
     cp .env.example .env
 
-PowerShell :
+Sous PowerShell :
 
     Copy-Item .env.example .env
 
 Le vrai .env est ignore par Git.
+
+## URLs locales
+
+- Angular : http://localhost:4200
+- API : http://localhost:8080/api/health
+- Etat des services : http://localhost:8080/api/system/health
+- n8n : http://localhost:5679
+
+n8n utilise volontairement le port 5679 cote hote afin de pouvoir cohabiter avec une autre instance exposee sur 5678.
 
 ## Architecture
 
@@ -98,8 +82,7 @@ Le vrai .env est ignore par Git.
        |
       n8n -------------- PostgreSQL n8n
        |
-       +---- Ollama
-       +---- Gmail / Drive / APIs
+       +---- Gmail / Drive / APIs externes
        |
        v
     Connecteurs de collecte
@@ -115,7 +98,8 @@ Angular gere l'experience utilisateur :
 - zones et criteres de recherche ;
 - consultation des annonces ;
 - favoris et statuts futurs ;
-- tableaux de bord.
+- tableaux de bord ;
+- etat des services.
 
 Angular passe par l'API Java pour les donnees metier.
 
@@ -135,6 +119,7 @@ Le premier module fonctionnel gere les criteres de recherche.
 Endpoints :
 
     GET  /api/health
+    GET  /api/system/health
     GET  /api/search-criteria
     GET  /api/search-criteria/active
     POST /api/search-criteria
@@ -146,20 +131,16 @@ n8n sert d'orchestrateur :
 - planification des collectes ;
 - recuperation des criteres actifs depuis Java ;
 - appel des futurs scrapers ;
-- Ollama ou autres IA ;
+- services externes ;
 - Gmail / Drive ;
 - notifications ;
-- retries et workflows externes.
+- retries et workflows.
 
 Depuis n8n, l'API Java est accessible avec :
 
     http://immo-api:8080
 
-Ollama installe sur la machine hote est prevu via :
-
-    http://host.docker.internal:11434
-
-### Scrapers
+## Scrapers
 
 Les scrapers restent separes du backend et de n8n.
 
@@ -204,7 +185,9 @@ GitHub Actions verifie automatiquement :
 
 - les tests Spring Boot avec PostgreSQL ;
 - le build Angular ;
-- la validite du Docker Compose.
+- compose.yml ;
+- compose.dev.yml ;
+- compose.prod.yml.
 
 ## Branches
 

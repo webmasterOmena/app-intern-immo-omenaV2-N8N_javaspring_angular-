@@ -44,11 +44,8 @@ services:
       N8N_DB_NAME: "${N8N_DB_NAME:-n8n}"
       N8N_DB_USER: "${N8N_DB_USER:-n8n}"
       N8N_DB_PASSWORD: "${N8N_DB_PASSWORD:-n8n-local-change-me}"
-      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434}"
     ports:
       - "${API_PORT:-8080}:8080"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       immo-db:
         condition: service_healthy
@@ -118,14 +115,11 @@ services:
       DB_POSTGRESDB_USER: "${N8N_DB_USER:-n8n}"
       DB_POSTGRESDB_PASSWORD: "${N8N_DB_PASSWORD:-n8n-local-change-me}"
       IMMO_API_BASE_URL: "http://immo-api:8080"
-      OLLAMA_BASE_URL: "${OLLAMA_BASE_URL:-http://ollama:11434}"
     ports:
       - "${N8N_PUBLIC_PORT:-5679}:5678"
     volumes:
       - n8n_data:/home/node/.n8n
       - ./n8n/workflows:/workflows
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
     depends_on:
       n8n-db:
         condition: service_healthy
@@ -139,44 +133,7 @@ services:
       start_period: 20s
     logging: *default-logging
 
-  ollama:
-    image: "ollama/ollama:${OLLAMA_VERSION:-latest}"
-    restart: unless-stopped
-    environment:
-      OLLAMA_HOST: "0.0.0.0:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    healthcheck:
-      test: ["CMD", "ollama", "list"]
-      interval: 10s
-      timeout: 5s
-      retries: 20
-      start_period: 10s
-    logging: *default-logging
-
-  ollama-model-init:
-    image: "ollama/ollama:${OLLAMA_VERSION:-latest}"
-    restart: "no"
-    environment:
-      OLLAMA_HOST: "http://ollama:11434"
-      OLLAMA_MODEL: "${OLLAMA_MODEL:?Define OLLAMA_MODEL, for example qwen3:8b}"
-    depends_on:
-      ollama:
-        condition: service_healthy
-    entrypoint: ["/bin/sh", "-c"]
-    command:
-      - |
-        echo "Checking Ollama model: $OLLAMA_MODEL"
-        if ollama show "$OLLAMA_MODEL" >/dev/null 2>&1; then
-          echo "Model already available: $OLLAMA_MODEL"
-        else
-          echo "Downloading model: $OLLAMA_MODEL"
-          ollama pull "$OLLAMA_MODEL"
-        fi
-    logging: *default-logging
-
 volumes:
   immo_db_data:
   n8n_db_data:
   n8n_data:
-  ollama_data:

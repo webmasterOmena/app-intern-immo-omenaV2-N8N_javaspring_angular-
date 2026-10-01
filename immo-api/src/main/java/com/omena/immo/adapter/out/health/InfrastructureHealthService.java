@@ -25,7 +25,6 @@ public class InfrastructureHealthService {
     private final String n8nDbName;
     private final String n8nDbUser;
     private final String n8nDbPassword;
-    private final String ollamaUrl;
 
     public InfrastructureHealthService(
             JdbcTemplate jdbcTemplate,
@@ -34,8 +33,7 @@ public class InfrastructureHealthService {
             @Value("${app.integrations.n8n-db.port:5432}") int n8nDbPort,
             @Value("${app.integrations.n8n-db.name:n8n}") String n8nDbName,
             @Value("${app.integrations.n8n-db.user:n8n}") String n8nDbUser,
-            @Value("${app.integrations.n8n-db.password:n8n-local-change-me}") String n8nDbPassword,
-            @Value("${app.integrations.ollama-url:http://host.docker.internal:11434}") String ollamaUrl
+            @Value("${app.integrations.n8n-db.password:n8n-local-change-me}") String n8nDbPassword
     ) {
         this.jdbcTemplate = jdbcTemplate;
         this.n8nUrl = stripTrailingSlash(n8nUrl);
@@ -44,7 +42,6 @@ public class InfrastructureHealthService {
         this.n8nDbName = n8nDbName;
         this.n8nDbUser = n8nDbUser;
         this.n8nDbPassword = n8nDbPassword;
-        this.ollamaUrl = stripTrailingSlash(ollamaUrl);
     }
 
     public SystemHealth inspect() {
@@ -66,13 +63,6 @@ public class InfrastructureHealthService {
                 false
         ));
         services.add(checkN8nDatabase());
-        services.add(checkHttp(
-                "ollama",
-                "Ollama",
-                "IA locale",
-                ollamaUrl + "/api/tags",
-                true
-        ));
 
         boolean allRequiredUp = services.stream()
                 .filter(service -> !service.optional())
